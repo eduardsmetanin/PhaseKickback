@@ -1,0 +1,203 @@
+\documentclass[12pt,twoside,a4paper]{article}
+\author{Eduard Smetanin}
+\title{\vspace{-2.0cm}Phase Kickback}
+\usepackage{a4wide}
+\usepackage{amsmath}
+\usepackage{qcircuit}
+\usepackage{braket}
+\usepackage{chemarrow}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{hyperref}
+\begin{document}
+\maketitle
+
+Phase kickback is used in many quantum algorithms, for instance Deutsch's, Simon’s, Shor’s, Grover's and the phase estimation algorithms.
+
+Let's consider quantum circuit
+\begin{equation*}
+        \Qcircuit @C=1em @R=1em {
+                \lstick{\ket{+}}
+                & \qw & \ctrl{1} & \qw & \meter \\
+                \lstick{\ket{\psi}} & \qw & \gate{U} & \qw & \qw \\
+                & \uparrow & & \uparrow \\
+                & A & & B
+        }
+\end{equation*}
+where $U$ is an arbitrary gate; state $\ket{+} \equiv \ket{+x} \equiv H \ket{0} = \frac{1}{\sqrt{2}} (\ket{0} + \ket{1})$, where $H$ is Hadamard gate.
+
+At point $A$ the system is in state
+$\ket{+} \ket{\psi} = \frac{\ket{0} + \ket{1}}{\sqrt{2}} \ket{\psi}
+= \frac{\ket{0} \ket{\psi} + \ket{1} \ket{\psi}}{\sqrt{2}}$.
+
+At point $B$ the system is in state
+$\frac{\ket{0} \ket{\psi} + \ket{1} U \ket{\psi}}{\sqrt{2}}$.
+$U$ gets applied only to $\ket{\psi}$ when the target qubit is $\ket{1}$ because $\begin{array}{c} \Qcircuit @C=.25em @R=.3em {& \ctrl{1} & \qw \\ & \gate{U} & \qw} \end{array}$ is a controlled operation that triggers when control qubit is $\ket{1}$.
+Generally speaking, controlled operations can be triggered not only on $\ket{1}$, but also on $\ket{0}$ or any function of the control qubit(s).
+We will discuss this later.
+
+In general case, after $U$ got applied to $\ket{\psi}$ when control qubit is $\ket{1}$, it's impossible to factor out original $\ket{\psi}$ from state $\frac{\ket{0} \ket{\psi} + \ket{1} U \ket{\psi}}{\sqrt{2}}$.
+
+However, if $\ket{\psi}$ happened to be an eigenvector of $U$ (with some eigenvalue $e^{i\phi}$), something interesting happens instead.
+In this case $U \ket{\psi} = e^{i\phi} \ket{\psi}$.
+At point $B$ the system is in state
+$\frac{\ket{0} \ket{\psi} + \ket{1} e^{i\phi} \ket{\psi}}{\sqrt{2}}
+= \frac{\ket{0} + e^{i\phi} \ket{1}}{\sqrt{2}}  \ket{\psi}$.
+Since $e^{i\phi}$ is just a number, we can factor out $\ket{\psi}$ this time.
+Because we can factor it out and because there is only one way to split composite state into individual states (up to a global phase), $e^{i\phi}$ will be with the first qubit when factored into individual states.
+Of course, if the system were entangled, we wouldn't be able to separate state into individual states, but this is not the case this time.
+So, in case when $\ket{\psi}$ is an eigenvector of $U$ the target qubit doesn't change, but control qubit changes in such a way that one of its amplitudes gets multiplied by the eigenvalue of the eigenvector.
+This phenomenon is called phase kickback.
+
+The requirements for phase kickback to occur are:
+\begin{itemize}
+        \item \emph{The control qubit(s) must be in a superposition.} \\
+        This is because otherwise applying controlled operation will just change global phase:
+\begin{equation*}
+        \ket{1} \ket{\psi} \autorightarrow{\Qcircuit @C=.25em @R=.3em {& \ctrl{1} & \qw \\ & \gate{U} & \qw}}{} \ket{1} U \ket{\psi} = \ket{1} e^{i\phi} \ket{\psi} \cong \ket{1} \ket{\psi}
+\end{equation*}
+        Global phase has no physical meaning, so it wouldn't change the physical state.
+        \item \emph{$\ket{\psi}$ must be an eigenvector of operator $U$.} \\
+        We already discussed this.
+        \item \emph{Arbitrary operator $U$ must be applied in a controlled way.} \\
+        Often $U$ gets triggered on $\ket{0}$ or $\ket{1}$, but as we mentioned, it can be any function of the control qubit.
+        The reason why $U$ has to be applied in a controlled way is if we apply $U$ unconditionally, we would just change global phase of a state.
+        At point $B$ state would be
+        \begin{equation*}
+                U \frac{\ket{0} + \ket{1}}{\sqrt{2}} \ket{\psi}
+                = e^{i\phi} \frac{\ket{0} + \ket{1}}{\sqrt{2}} \ket{\psi}
+                \cong \frac{\ket{0} + \ket{1}}{\sqrt{2}} \ket{\psi}
+        \end{equation*}
+\end{itemize}
+
+Let's take a look at an example of how phase kickback works.
+We will use a simple search algorithm described in \cite{watrous5}.
+
+Suppose we are given a function that inputs two qubits and outputs one qubit along with a promise it's one of the four functions:
+\begin{center}
+        \begin{tabular}[t]{|c|c|}
+                \hline
+                \multicolumn{2}{|c|}{$f_{00}$} \\
+                \hline
+                input & output \\
+                \hline
+                00 & 1 \\
+                01 & 0 \\
+                10 & 0 \\
+                11 & 0 \\
+                \hline
+        \end{tabular}
+        \begin{tabular}[t]{|c|c|}
+                \hline
+                \multicolumn{2}{|c|}{$f_{01}$} \\
+                \hline
+                input & output \\
+                \hline
+                00 & 0 \\
+                01 & 1 \\
+                10 & 0 \\
+                11 & 0 \\
+                \hline
+        \end{tabular}
+        \begin{tabular}[t]{|c|c|}
+                \hline
+                \multicolumn{2}{|c|}{$f_{10}$} \\
+                \hline
+                input & output \\
+                \hline
+                00 & 0 \\
+                01 & 0 \\
+                10 & 1 \\
+                11 & 0 \\
+                \hline
+        \end{tabular}
+        \begin{tabular}[t]{|c|c|}
+                \hline
+                \multicolumn{2}{|c|}{$f_{11}$} \\
+                \hline
+                input & output \\
+                \hline
+                00 & 0 \\
+                01 & 0 \\
+                10 & 0 \\
+                11 & 1 \\
+                \hline
+        \end{tabular}
+\end{center}
+Note, the functions outputs $1$ for one input and $0$ for all others.
+
+The goal is to determine which function is implemented by the circuit without looking inside of $U_f$ (see below).
+The rest of the circuit is only allowed to evaluate the function.
+To determine which function is implemented is the same as to find the input on which the function outputs $1$.
+
+This circuit solves the problem:
+\begin{equation*}
+        \Qcircuit @C=1em @R=1em {
+                \lstick{\ket{+}} & \qw & \multigate{2}{U_f} & \qw & \multigate{1}{M} & \qw & \meter \\
+                \lstick{\ket{+}} & \qw & \ghost{U_f} & \qw & \ghost{U_f} & \qw & \meter \\
+                \lstick{\ket{-}} & \qw & \ghost{U_f} & \qw & \qw & \qw & \qw & trash \\
+                & \uparrow & & \uparrow \\
+                & A & & B
+        }
+\end{equation*}
+$M$ is a circuit that converts output of $U_f$ to allow find the solution by measuring.
+We are not going to discuss how it's implemented here since this is not directly related to phase kickback.
+
+State $\ket{+} \equiv \ket{+x} \equiv H \ket{0} = \frac{1}{\sqrt{2}} (\ket{0} + \ket{1})$ and $\ket{-} \equiv \ket{-x} \equiv H \ket{1} = \frac{1}{\sqrt{2}} (\ket{0} - \ket{1})$, where $H$ is Hadamard gate.
+
+$U_f$ is implemented in a way that is very common for a lot of quantum algorithms:
+\begin{equation*}
+        \Qcircuit @C=1em @R=1em {
+                \lstick{\ket{a}} & \qw & \multigate{2}{U_f} & \qw & \qw & \ket{a} \\
+                \lstick{\ket{b}} & \qw & \ghost{U_f} & \qw & \qw & \ket{b} \\
+                \lstick{\ket{c}} & \qw & \ghost{U_f} & \qw & \qw & & & \ket{c \oplus f(a, b)}
+        }
+\end{equation*}
+where $a$ and $b$ are control qubits and $c$ is target qubit that gets flipped when $f(a, b)$ outputs $1$.
+So, $U_f$ is a $control {\text -} f {\text -} NOT$ gate.
+Notice that state of the target qubit $\ket{-}$ is an eigenvector of $NOT$ gate.
+
+At point $A$ the system is in state
+$\ket{+} \ket{+} \ket{-} = \frac{1}{2} (\ket{00} + \ket{01} + \ket{10} + \ket{11}) \ket{-}
+= \frac{1}{2} (\ket{00} \ket{-} + \ket{01} \ket{-} + \ket{10} \ket{-} + \ket{11} \ket{-})$.
+We keep the last qubit as short $\ket{-}$ instead of $\frac{1}{\sqrt{2}} (\ket{0} - \ket{1})$ because it won't change.
+
+At point $B$, when function $f = f_{00}$, the system is in state
+\begin{equation*}
+        \begin{split}
+                \frac{1}{2} (\ket{00} U_{f_{00}} \ket{-} + \ket{01} \ket{-} + \ket{10} \ket{-} + \ket{11} \ket{-}) \\
+                = \frac{1}{2} (\ket{00} (-1) \ket{-} + \ket{01} \ket{-} + \ket{10} \ket{-} + \ket{11} \ket{-}) \\
+                = \frac{1}{2} (- \ket{00} + \ket{01} + \ket{10} + \ket{11}) \ket{-}.
+        \end{split}
+\end{equation*}
+Notice how phase of $\ket{00}$ gets flagged by multiplying it by eigenvalue of $\ket{-}$ which is $-1$.
+Later on this flag will be converted into classical information that will allow us to receive the result of the computation.
+
+Similarly, at point $B$, when function $f = f_{01}$, the system is in state
+\begin{equation*}
+        \begin{split}
+                \frac{1}{2} (\ket{00} \ket{-} + \ket{01} U_{f_{01}} \ket{-} + \ket{10} \ket{-} + \ket{11} \ket{-}) \\
+                = \frac{1}{2} (\ket{00} \ket{-} + \ket{01} (-1) \ket{-} + \ket{10} \ket{-} + \ket{11} \ket{-}) \\
+                = \frac{1}{2} (\ket{00} - \ket{01} + \ket{10} + \ket{11}) \ket{-}.
+        \end{split}
+\end{equation*}
+So, for every of the four functions $f$, the corresponding phase gets flagged to be later converted to the solution of the problem.
+
+\cite{watrous}, \cite{gokhale} and \cite{zhou} contain additional information about phase kickback.
+
+\begin{thebibliography}{99}
+        \bibitem{watrous5} \hypertarget{watrous5}{} John Watrous - CPSC 519/619: Quantum Computation
+        - Lecture 5 - 2006 \\
+        \url{https://cs.uwaterloo.ca/~watrous/LectureNotes/CPSC519.Winter2006/all.pdf#page=28}
+
+        \bibitem{watrous} \hypertarget{watrous}{} John Watrous - CPSC 519/619: Quantum Computation - 2006 \\
+        \url{https://cs.uwaterloo.ca/~watrous/LectureNotes/CPSC519.Winter2006/all.pdf}
+
+        \bibitem{gokhale} \hypertarget{gokhale}{} Pranav Gokhale - What is phase kickback and how does it occur? \\
+        \url{https://www.quora.com/What-is-phase-kickback-and-how-does-it-occur}
+
+        \bibitem{zhou} \hypertarget{zhou}{} Dong Zhou - Phase kickback \\
+        \url{https://nosarthur.github.io/quantum%20information%20and%20computation/2018/01/26/kickback.html}
+\end{thebibliography}
+
+\end{document}
